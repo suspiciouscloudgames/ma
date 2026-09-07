@@ -46,9 +46,11 @@ export async function preparePhoto(file: File) {
   const image = await loadImage(source);
   if (!image.naturalWidth || !image.naturalHeight) throw new Error("unsupported image");
 
-  let main = await renderJpeg(image, 2560, .84);
-  if (main.size > 8 * 1024 * 1024) main = await renderJpeg(image, 2200, .72);
-  if (main.size > 8 * 1024 * 1024) main = await renderJpeg(image, 1800, .62);
+  // 2200px remains crisp on a large shared screen while substantially
+  // reducing phone originals that are commonly 12–48 megapixels.
+  let main = await renderJpeg(image, 2200, .82);
+  if (main.size > 8 * 1024 * 1024) main = await renderJpeg(image, 2000, .75);
+  if (main.size > 8 * 1024 * 1024) main = await renderJpeg(image, 1800, .68);
   if (main.size > 10 * 1024 * 1024) throw new Error("image too large");
   const thumbnail = await renderJpeg(image, 640, .72);
   return { main, thumbnail };

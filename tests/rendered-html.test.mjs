@@ -10,7 +10,8 @@ test("keeps workshop uploads displayable and lightweight", async () => {
     source("app/gallery/page.tsx"), source("app/respond/page.tsx"),
   ]);
   assert.match(processor, /heic2any/);
-  assert.match(processor, /2560/);
+  assert.match(processor, /2200/);
+  assert.match(processor, /\.82/);
   assert.match(processor, /640/);
   assert.match(uploadRoute, /allowedContentTypes:\s*\["image\/jpeg"\]/);
   assert.match(uploadRoute, /thumbnails\//);
