@@ -1,11 +1,12 @@
 const url="https://lhpfrkumzpinzgkkmgmd.supabase.co",key="sb_publishable__YJW6ZRNOjK8z7CuJ-0OOA_GyUzRWLL";
 const auth={apikey:key,Authorization:`Bearer ${key}`};
-const jpeg=Uint8Array.from([255,216,255,219,0,67,...Array(64).fill(8),255,217]);
+const makeJpeg=(bytes)=>{const data=new Uint8Array(bytes);data.set([255,216,255,219],0);data.set([255,217],bytes-2);return data;};
+const mainJpeg=makeJpeg(1536*1024),thumbnailJpeg=makeJpeg(100*1024);
 const count=Number(process.env.PARTICIPANTS??20),batch=Array.from({length:count},(_,i)=>({id:crypto.randomUUID(),i}));
 const started=Date.now();
 const results=await Promise.all(batch.map(async({id})=>{
  const paths=[`photos/load-test-${id}.jpg`,`thumbnails/load-test-${id}.jpg`];
- const uploads=await Promise.all(paths.map(path=>fetch(`${url}/storage/v1/object/workshop-photos/${path}`,{method:"POST",headers:{...auth,"Content-Type":"image/jpeg","x-upsert":"false"},body:jpeg})));
+ const uploads=await Promise.all(paths.map((path,index)=>fetch(`${url}/storage/v1/object/workshop-photos/${path}`,{method:"POST",headers:{...auth,"Content-Type":"image/jpeg","x-upsert":"false"},body:index?thumbnailJpeg:mainJpeg})));
  if(uploads.some(r=>!r.ok))return{ok:false,paths};
  const row=await fetch(`${url}/rest/v1/photos`,{method:"POST",headers:{...auth,"Content-Type":"application/json",Prefer:"return=representation"},body:JSON.stringify({storage_path:paths[0],thumbnail_path:paths[1]})});
  const data=await row.json();return{ok:row.ok,id:data[0]?.id,paths};
