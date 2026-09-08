@@ -90,6 +90,7 @@ create or replace function private.is_admin(candidate text) returns boolean
 language sql stable security definer set search_path = private, public
 as $$ select exists(select 1 from private.admin_settings where id and password_hash = extensions.crypt(candidate, password_hash)); $$;
 revoke all on function private.is_admin(text) from public, anon, authenticated;
+grant execute on function private.is_admin(text) to anon, authenticated;
 
 drop policy if exists "admin delete workshop photos" on storage.objects;
 create policy "admin delete workshop photos" on storage.objects for delete to anon, authenticated
