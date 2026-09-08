@@ -16,7 +16,7 @@ export type ExhibitState = {
   id: boolean;
   display_mode: "none" | "photos" | "play";
   questions_enabled: boolean;
-  locale: "ko" | "ja";
+  locale: "ko" | "en";
   version: number;
 };
 

@@ -14,7 +14,7 @@ create table if not exists public.exhibit_state (
   id boolean primary key default true check (id),
   display_mode text not null default 'none' check (display_mode in ('none','photos','play')),
   questions_enabled boolean not null default false,
-  locale text not null default 'ko' check (locale in ('ko','ja')),
+  locale text not null default 'ko' check (locale in ('ko','en')),
   version bigint not null default (extract(epoch from clock_timestamp()) * 1000)::bigint
 );
 insert into public.exhibit_state (id) values (true) on conflict (id) do nothing;
