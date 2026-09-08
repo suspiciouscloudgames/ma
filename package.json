@@ -14,8 +14,7 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "@vercel/blob": "^2.6.1",
-    "drizzle-orm": "0.45.2",
+    "@supabase/supabase-js": "^2.57.4",
     "heic2any": "0.0.4",
     "next": "16.3.4",
     "qrcode.react": "4.2.0",
