@@ -142,12 +142,11 @@ h1 { margin: 0; font-size: clamp(28px, 8vw, 38px); line-height: 1.18; letter-spa
 .node-delete:hover { color: #111; }
 .question-response-node img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; background: #f5f5f3; }
 .question-response-node p { margin: 0; padding: 11px 13px 13px; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
-.play-groups { display: grid; gap: 72px; width: min(1100px, 100%); margin: 28px auto 0; }
-.play-group { display: grid; grid-template-columns: 1fr; gap: 24px; padding: 36px 28px 54px; border-top: 1px solid rgba(17,17,17,.15); }
-.play-question { position: relative; top: auto; width: 100%; min-width: 0; cursor: default; touch-action: auto; user-select: text; }
-.play-responses { display: grid; grid-template-columns: 1fr; align-items: start; gap: 24px; }
-.play-response { position: relative; width: 100%; cursor: default; touch-action: auto; user-select: text; }
-.play-response img { max-height: 72vh; }
+.play-groups { display: grid; gap: 56px; width: 100%; margin: 28px auto 0; }
+.play-group { display: grid; grid-template-columns: minmax(180px, 280px) minmax(0, 1fr); align-items: start; gap: 32px; padding: 20px 0; }
+.play-question { position: relative; top: auto; width: 100%; min-width: 180px; cursor: default; touch-action: auto; user-select: text; }
+.play-responses { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; }
+.play-response { position: relative; width: min(20vw, 280px); min-width: 190px; cursor: default; touch-action: auto; user-select: text; }
 .mobile-photo-list { display: none; }
 .question-choice-list { display: grid; gap: 8px; }
 .question-choice-list button { padding: 16px; border: 1px solid var(--line); border-radius: 13px; background: #fafaf8; color: #333; font-size: 15px; line-height: 1.5; text-align: left; }
@@ -180,7 +179,8 @@ h1 { margin: 0; font-size: clamp(28px, 8vw, 38px); line-height: 1.18; letter-spa
   .play-groups { gap: 24px; margin-top: 10px; }
   .play-group { grid-template-columns: 1fr; gap: 14px; padding: 18px 4px; }
   .play-question { position: relative; top: auto; }
-  .play-responses { grid-template-columns: 1fr; gap: 12px; }
+  .play-responses { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .play-response { width: 100%; min-width: 0; }
   .mobile-photo-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .mobile-photo-list img { display: block; width: 100%; height: auto; border-radius: 7px; }
   .photo-actions { display: none; }
