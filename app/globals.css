@@ -98,7 +98,7 @@ h1 { margin: 0; font-size: clamp(28px, 8vw, 38px); line-height: 1.18; letter-spa
 .qr-overlay svg { width: min(72vw, 72vh); height: min(72vw, 72vh); padding: 18px; background: #fff; border-radius: 16px; shape-rendering: crispEdges; }
 .gallery-grid { position: relative; width: 100%; margin: 0 auto; }
 .gallery-connections { position: absolute; inset: 0; z-index: 10; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.gallery-connections line { stroke: rgba(126,108,94,.42); stroke-width: 1.25; stroke-linecap: round; animation: draw-connection .65s ease both; }
+.gallery-connections line { stroke: rgba(126,108,94,.38); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 1 8; animation: draw-connection .65s ease both; }
 .gallery-connections path { fill: none; stroke: rgba(73,68,57,.55); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 2 9; animation: draw-connection .45s ease both; }
 .photo-route line { stroke-width: 3; stroke-dasharray: none; opacity: .86; }
 .photo-route text { fill: #fff; font-family: Arial, sans-serif; font-size: 10px; font-weight: 700; text-anchor: middle; }
