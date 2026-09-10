@@ -2,8 +2,22 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "모바일 고고학",
-  description: "모두의 사진이 한 화면에 모이는 실시간 포토 월",
+  metadataBase: new URL("https://suspiciouscloudgames.github.io"),
+  title: "Loopntale Workshop",
+  description: "Loopntale Workshop",
+  alternates: { canonical: "/ma/" },
+  openGraph: {
+    title: "Loopntale Workshop",
+    description: "Loopntale Workshop",
+    siteName: "Loopntale Workshop",
+    url: "/ma/",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Loopntale Workshop",
+    description: "Loopntale Workshop",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
