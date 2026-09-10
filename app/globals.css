@@ -99,7 +99,7 @@ h1 { margin: 0; font-size: clamp(28px, 8vw, 38px); line-height: 1.18; letter-spa
 .gallery-grid { position: relative; width: 100%; margin: 0 auto; }
 .gallery-connections { position: absolute; inset: 0; z-index: 10; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .gallery-connections line { stroke: rgba(126,108,94,.38); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 1 8; animation: draw-connection .65s ease both; }
-.gallery-connections path { fill: none; stroke: rgba(73,68,57,.55); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 2 9; animation: draw-connection .45s ease both; }
+.gallery-connections path { fill: none; stroke: rgba(126,108,94,.4); stroke-width: 1.7; stroke-linecap: round; stroke-dasharray: 1 8; vector-effect: non-scaling-stroke; animation: draw-connection .65s ease both; }
 .photo-route line { stroke-width: 3; stroke-dasharray: none; opacity: .86; }
 .photo-route text { fill: #fff; font-family: Arial, sans-serif; font-size: 10px; font-weight: 700; text-anchor: middle; }
 .photo-route .route-start { fill: currentColor; paint-order: stroke; stroke: #fff; stroke-width: 4px; font-size: 11px; }
