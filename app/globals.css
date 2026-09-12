@@ -153,6 +153,7 @@ h1 { margin: 0; font-size: clamp(28px, 8vw, 38px); line-height: 1.18; letter-spa
 .mobile-photo-list { display: none; }
 .chronological-photos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; gap: 28px 1.2%; }
 .chronological-photos .gallery-item { position: relative; width: min(100%, 360px); transition: none; cursor: default; touch-action: auto; user-select: auto; }
+.chronological-photos .gallery-item img { width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; background: #f5f5f3; }
 .submission-status { min-height: 24px; font-size: 13px; line-height: 1.6; color: #685b51; }
 .outbox-status { position: fixed; z-index: 1100; bottom: 12px; left: 12px; right: 12px; padding: 12px 16px; border-radius: 12px; background: #f4ede4; color: #51463d; box-shadow: 0 2px 12px #0001; font-size: 13px; }
 .outbox-status button, .admin-notice button { margin-left: 12px; border: 0; background: transparent; color: inherit; text-decoration: underline; cursor: pointer; }
@@ -188,7 +189,7 @@ h1 { margin: 0; font-size: clamp(28px, 8vw, 38px); line-height: 1.18; letter-spa
   .gallery-connect, .gallery-play, .gallery-path, .gallery-qr, .qr-overlay { display: none; }
   .exhibit-controls, .exhibit-canvas { display: none; }
   .mobile-photo-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-  .mobile-photo-list img { display: block; width: 100%; height: auto; border-radius: 7px; }
+  .mobile-photo-list img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; background: #f5f5f3; border-radius: 7px; }
   .photo-actions { display: none; }
   .wall-page { padding: 12px; }
   .wall-header { padding: 8px 2px 16px; }
