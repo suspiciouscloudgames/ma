@@ -151,6 +151,14 @@ h1 { margin: 0; font-size: clamp(28px, 8vw, 38px); line-height: 1.18; letter-spa
 .question-response-node img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; background: #f5f5f3; }
 .question-response-node p { margin: 0; padding: 11px 13px 13px; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
 .mobile-photo-list { display: none; }
+.chronological-photos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; gap: 28px 1.2%; }
+.chronological-photos .gallery-item { position: relative; width: min(100%, 360px); transition: none; cursor: default; touch-action: auto; user-select: auto; }
+.submission-status { min-height: 24px; font-size: 13px; line-height: 1.6; color: #685b51; }
+.outbox-status { position: fixed; z-index: 1100; bottom: 12px; left: 12px; right: 12px; padding: 12px 16px; border-radius: 12px; background: #f4ede4; color: #51463d; box-shadow: 0 2px 12px #0001; font-size: 13px; }
+.outbox-status button, .admin-notice button { margin-left: 12px; border: 0; background: transparent; color: inherit; text-decoration: underline; cursor: pointer; }
+.admin-notice { padding: 10px 16px; background: #f4ede4; color: #51463d; font-size: 13px; }
+.question-node { overflow-wrap: anywhere; }
+.exhibit-canvas .gallery-connections { z-index: 0; }
 .question-choice-list { display: grid; gap: 8px; }
 .question-choice-list button { padding: 16px; border: 1px solid var(--line); border-radius: 13px; background: #fafaf8; color: #333; font-size: 15px; line-height: 1.5; text-align: left; }
 .question-choice-list button.selected { border-color: #111; background: #111; color: #fff; }

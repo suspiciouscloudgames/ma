@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import WorkshopClient from './workshop-client';
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://suspiciouscloudgames.github.io"),
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>{children}<WorkshopClient/></body>
     </html>
   );
 }
