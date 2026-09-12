@@ -9,7 +9,7 @@ const source=ts.transpileModule(await readFile(new URL('../app/outbox.ts',import
 function scenario(){
  const indexedDB=new IDBFactory(),records=new Map(),files=new Map(),navigation={onLine:false};let clock=0,fail=false,ackLost=false,fatal=false,conversions=0,writes=0;
  const supabase={from:table=>({insert:async row=>{if(fail)return{error:{message:'offline'}};if(fatal)return{error:{code:'23503',message:'missing question'}};const key=table+row.id;if(records.has(key))return{error:{code:'23505'}};records.set(key,row);writes++;if(ackLost){ackLost=false;return{error:{message:'response lost'}};}return{error:null};},select:()=>({eq:(_key,id)=>({single:async()=>fail?{error:{message:'offline'}}:{error:null,data:records.get(table+id)}})})}),storage:{from:()=>({upload:async(path,blob)=>{if(fail)return{error:{message:'offline'}};if(files.has(path))return{error:{statusCode:'409',message:'already exists'}};files.set(path,blob);return{error:null};}})}};
- function boot(){const exports={};const context=vm.createContext({exports,require:name=>name==='./supabase'?{supabase}:{preparePhoto:async()=>{conversions++;return{main:new Blob(['main']),thumbnail:new Blob(['thumb'])};}},indexedDB,navigator:navigation,window:new EventTarget(),Event,Blob,File,crypto,Date:class extends Date{static now(){return clock;}},setTimeout,clearTimeout,setInterval,clearInterval,console});vm.runInContext(source,context);return exports;}
+ function boot(overrides={}){const exports={};const context=vm.createContext({exports,require:name=>name==='./supabase'?{supabase}:{preparePhoto:async()=>{conversions++;return{main:new Blob(['main']),thumbnail:new Blob(['thumb'])};}},indexedDB,navigator:navigation,window:new EventTarget(),Event,Blob,File,crypto,Date:class extends Date{static now(){return clock;}},setTimeout,clearTimeout,setInterval,clearInterval,console,...overrides});vm.runInContext(source,context);return exports;}
  return{boot,navigation,records,files,get writes(){return writes;},get conversions(){return conversions;},fail(value){fail=value;},loseAck(){ackLost=true;},fatal(value){fatal=value;},advance(){clock+=60000;}};
 }
 test('offline text survives a new page and a lost acknowledgement registers once',async()=>{
@@ -31,4 +31,12 @@ test('permanent validation errors retain the original instead of claiming succes
 test('30 queued submissions recover exactly once and reconnect bypasses retry delay',async()=>{
  const s=scenario(),queue=s.boot();await Promise.all(Array.from({length:30},(_,i)=>queue.enqueue({kind:'question',row:{text:`question ${i}`,participant_id:`participant ${i}`}})));
  s.navigation.onLine=true;s.fail(true);await queue.flush();assert.equal(s.writes,0);s.fail(false);await queue.flush(true);assert.equal(s.writes,30);assert.ok((await queue.jobs()).every(j=>j.state==='sent'));await queue.flush(true);assert.equal(s.writes,30);
+});
+test('blocked cross-tab notifications cannot turn a committed job into a failed save',async()=>{
+ const s=scenario(),queue=s.boot({BroadcastChannel:class{constructor(){throw Error('Browser policy denied broadcast');}}});
+ const id=await queue.enqueue({kind:'question',row:{text:'saved once',participant_id:'p'}});assert.ok(id);assert.equal((await queue.jobs()).length,1);s.navigation.onLine=true;await queue.flush();assert.equal(s.writes,1);assert.equal((await queue.jobs())[0].state,'sent');
+});
+test('a transient device database open failure is recoverable without reloading',async()=>{
+ const factory=new IDBFactory();let unavailable=true;const queue=scenario().boot({indexedDB:{open(...args){if(unavailable)throw Error('Device storage temporarily unavailable');return factory.open(...args);}}});
+ await assert.rejects(queue.jobs());unavailable=false;const id=await queue.enqueue({kind:'question',row:{text:'retained',participant_id:'p'}});assert.equal((await queue.jobs())[0].id,id);
 });

@@ -5,7 +5,8 @@ export type Job = { id: string; kind: 'photo' | 'question' | 'response'; state: 
 let dbPromise: Promise<IDBDatabase> | undefined;
 export function observeJobs(refresh:()=>void) {
   window.addEventListener('ma-outbox',refresh);
-  const channel=typeof BroadcastChannel==='undefined'?null:new BroadcastChannel('ma-outbox');
+  let channel:BroadcastChannel|null=null;
+  try{if(typeof BroadcastChannel!=='undefined')channel=new BroadcastChannel('ma-outbox');}catch{}
   if(channel)channel.onmessage=refresh;
   const resume=()=>{if(document.visibilityState==='visible')refresh();};
   document.addEventListener('visibilitychange',resume);
@@ -16,9 +17,10 @@ function database() {
   return dbPromise ??= new Promise<IDBDatabase>((resolve,reject) => {
     const request = indexedDB.open('ma-workshop-outbox',1);
     request.onupgradeneeded = () => request.result.createObjectStore('jobs',{keyPath:'id'});
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => { dbPromise=undefined; reject(request.error); };
-  });
+    request.onsuccess = () => {const db=request.result;db.onversionchange=()=>{db.close();dbPromise=undefined;};resolve(db);};
+    request.onblocked = () => reject(new Error('Device storage is busy'));
+    request.onerror = () => reject(request.error);
+  }).catch(error=>{dbPromise=undefined;throw error;});
 }
 export async function jobs(): Promise<Job[]> {
   const db=await database();
@@ -27,8 +29,10 @@ export async function jobs(): Promise<Job[]> {
 async function save(job: Job) {
   const db=await database();
   await new Promise<void>((resolve,reject) => {const tx=db.transaction('jobs','readwrite'),store=tx.objectStore('jobs'),previous=store.get(job.id);previous.onsuccess=()=>{if(previous.result?.state!=='sent')store.put(job);};tx.oncomplete=()=>resolve(); tx.onerror=()=>reject(tx.error); tx.onabort=()=>reject(tx.error);});
-  window.dispatchEvent(new Event('ma-outbox'));
-  if(typeof BroadcastChannel!=='undefined'){const channel=new BroadcastChannel('ma-outbox');channel.postMessage('changed');channel.close();}
+  // Notifications are optional. Once committed, a browser notification failure
+  // must never be reported as a failed save (which could create a second job).
+  try{window.dispatchEvent(new Event('ma-outbox'));}catch{}
+  try{if(typeof BroadcastChannel!=='undefined'){const channel=new BroadcastChannel('ma-outbox');channel.postMessage('changed');channel.close();}}catch{}
 }
 export async function enqueue(input: Pick<Job,'kind'|'file'|'row'>) {
   const job:Job={...input,id:crypto.randomUUID(),state:'pending',created:Date.now(),attempts:0,next:0};

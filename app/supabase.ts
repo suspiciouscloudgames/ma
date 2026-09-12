@@ -17,7 +17,7 @@ export const supabase = createClient(
 export const adminStorage = (adminKey: string) => createClient(
   "https://lhpfrkumzpinzgkkmgmd.supabase.co",
   "sb_publishable__YJW6ZRNOjK8z7CuJ-0OOA_GyUzRWLL",
-  { auth: { persistSession: false }, global: { headers: { "x-admin-key": adminKey } } },
+  { auth: { persistSession: false }, global: { fetch:timedFetch, headers: { "x-admin-key": adminKey } } },
 );
 
 export type ExhibitState = {

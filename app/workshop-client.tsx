@@ -23,7 +23,8 @@ export function useSubmission(kind:Job['kind']) {
   },[kind]);
   const submit=async(input:Omit<Parameters<typeof enqueue>[0],'kind'>)=>{
     if(lock.current||['pending','saving'].includes(state))return false;lock.current=true;setState('saving');
-    try{id.current=await enqueue({...input,kind});try{localStorage.setItem(`ma-current-${kind}`,id.current);}catch{}setState('pending');const job=(await jobs()).find(j=>j.id===id.current);if(job)setState(job.state);return true;}
+    id.current=null;
+    try{id.current=await enqueue({...input,kind});try{localStorage.setItem(`ma-current-${kind}`,id.current);}catch{}setState('pending');try{const job=(await jobs()).find(j=>j.id===id.current);if(job)setState(job.state);}catch{/* Already saved: an optional status read must not enable duplicate submission. */}return true;}
     catch{setState('storage');return false;}finally{lock.current=false;}
   };
   return {state,submit,reset:()=>{id.current=null;try{localStorage.removeItem(`ma-current-${kind}`);}catch{}setState('idle');},busy:state==='pending'||state==='saving'};

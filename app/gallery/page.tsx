@@ -17,6 +17,7 @@ export default function GalleryPage(){
  const state=useExhibitState(),{display_mode:mode,questions_enabled:questionsEnabled,locale}=state,en=locale==='en';
  const [photos,setPhotos]=useState<Photo[]>([]),[questions,setQuestions]=useState<Question[]>([]),[responses,setResponses]=useState<Response[]>([]),[qr,setQr]=useState(false),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
  const canvas=useRef<HTMLElement>(null),drag=useRef<Drag|null>(null),movingIds=useRef(new Set<string>()),pendingMoves=useRef(new Map<string,Drag>());
+ const savingMoves=useRef(false);
  const [width,setWidth]=useState(1400),[heights,setHeights]=useState<Record<string,number>>({}),[tick,setTick]=useState(0);
  const load=useCallback(async()=>{
    const [p,q,r]=await Promise.all([supabase.from('photos').select('*').order('created_at').order('id'),supabase.from('questions').select('*').order('created_at').order('id'),supabase.from('responses').select('*').order('created_at').order('id')]);
@@ -44,9 +45,9 @@ export default function GalleryPage(){
    const apply=<T extends Card>(items:T[])=>items.map(v=>v.id===d.id?{...v,x:d.x,y:d.y,z:d.z}:v);
    if(d.kind==='question')setQuestions(apply);else setResponses(apply);setTick(v=>v+1);
  }
- const saveMoves=useCallback(async()=>{const key=sessionStorage.getItem('ma-admin');if(!key)return;
+ const saveMoves=useCallback(async()=>{const key=sessionStorage.getItem('ma-admin');if(!key||savingMoves.current)return;savingMoves.current=true;try{
    for(const [id,d] of pendingMoves.current){const {error}=await supabase.rpc('admin_move_item',{admin_key:key,item_kind:d.kind,item_id:id,next_x:d.x,next_y:d.y,next_z:d.z});if(error?.code==='42501'){sessionStorage.removeItem('ma-admin');setNotice('관리자 암호가 맞지 않습니다. / Incorrect administrator password.');return;}if(!error&&pendingMoves.current.get(id)===d){pendingMoves.current.delete(id);movingIds.current.delete(id);}}
-   try{sessionStorage.setItem('ma-pending-moves',JSON.stringify([...pendingMoves.current]));}catch{}
+   }catch{/* Keep pending positions and retry after reconnection. */}finally{savingMoves.current=false;try{sessionStorage.setItem('ma-pending-moves',JSON.stringify([...pendingMoves.current]));}catch{}}
  },[]);
  useEffect(()=>{try{for(const [id,d] of JSON.parse(sessionStorage.getItem('ma-pending-moves')??'[]'))pendingMoves.current.set(id,d);}catch{}const retry=()=>{void saveMoves();};window.addEventListener('online',retry);const timer=setInterval(retry,5000);retry();return()=>{window.removeEventListener('online',retry);clearInterval(timer);};},[saveMoves]);
  async function finish(){const d=drag.current;if(!d)return;drag.current=null;const key=admin();if(!key){movingIds.current.delete(d.id);void load();return;}sessionStorage.setItem('ma-admin',key);pendingMoves.current.set(d.id,{...d});try{sessionStorage.setItem('ma-pending-moves',JSON.stringify([...pendingMoves.current]));}catch{}await saveMoves();if(pendingMoves.current.has(d.id))setNotice(en?'Position saved on this device; waiting to sync.':'위치를 기기에 보관했습니다. 연결되면 다시 저장합니다.');}
