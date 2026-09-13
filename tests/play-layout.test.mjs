@@ -13,4 +13,14 @@ for(const width of [761,1024,1400,1920])test(`30 responses, long text, no overla
  for(let i=1;i<questions.length;i++)assert.ok(result.boxes[questions[i].id].y>result.boxes[questions[i-1].id].y);
  const added=playLayout(questions,[...responses,{...card('new'),question_id:'q6'}],width,heights);for(const id of ['q0','r0','r7'])assert.deepEqual(result.boxes[id],added.boxes[id],'unrelated earlier groups stay put');
 });
-test('manual drag survives recalculation; new cards avoid it',()=>{const q=card('q'),r={...card('r'),question_id:'q',x:45,y:90};const {boxes}=playLayout([q],[r,{...card('new'),question_id:'q'}],1400,{});assert.equal(boxes.r.x,630);assert.equal(boxes.r.y,90);assert.ok(boxes.new.x>=boxes.r.x+boxes.r.width||boxes.new.y>=boxes.r.y+boxes.r.height);});
+for(const width of [761,1400,1920])test(`drag changes only the selected card at ${width}px, including reload`,()=>{
+ const questions=Array.from({length:4},(_,i)=>card(`q${i}`)),responses=Array.from({length:12},(_,i)=>({...card(`r${i}`),question_id:`q${i%4}`}));
+ const heights={q1:420,r2:730},before=playLayout(questions,responses,width,heights);
+ for(const id of ['r0','r2','q0','q2'])for(const y of [0,350,3000]){
+   const move=items=>items.map(c=>c.id===id?{...c,x:40,y,z:999}:c),q=move(questions),r=move(responses);
+   const after=playLayout(q,r,width,heights);
+   assert.ok(Math.abs(after.boxes[id].x-width*.4)<0.001);assert.equal(after.boxes[id].y,y);
+   for(const other of Object.keys(before.boxes))if(other!==id)assert.deepEqual(after.boxes[other],before.boxes[other],`${other} moved when dragging ${id}`);
+   assert.deepEqual(after,playLayout(JSON.parse(JSON.stringify(q)),JSON.parse(JSON.stringify(r)),width,heights));
+ }
+});
