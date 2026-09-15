@@ -21,6 +21,7 @@ export const adminStorage = (adminKey: string) => createClient(
 );
 
 export type ExhibitState = {
+  workshop_closed?: boolean;
   id: boolean;
   display_mode: "none" | "photos" | "play";
   questions_enabled: boolean;

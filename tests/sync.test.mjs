@@ -31,7 +31,7 @@ test('submission notices stay silent while saving or pending; completion and gen
  assert.equal(exports.SubmissionStatus({state:'storage',en:true}).props.children[0],'Could not send. Please try again.');
  const page=await readFile(new URL('../app/page.tsx',import.meta.url),'utf8');
  for(const source of [text,page])assert.doesNotMatch(source,/전송 대기|Waiting to send|waiting to send/);
- assert.match(page,/disabled=\{!file\|\|submission.busy\}/);
+ assert.match(page,/disabled=\{!file\|\|submission.busy\|\|state.workshop_closed\}/);
  for(const file of ['page.tsx','question/page.tsx','respond/page.tsx']){
    const source=await readFile(new URL(`../app/${file}`,import.meta.url),'utf8');
    assert.match(source,/onRetry=\{(?:send|submit)\}/);

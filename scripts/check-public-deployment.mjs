@@ -10,6 +10,7 @@ for(const route of ['/ma/','/ma/gallery/','/ma/question/','/ma/respond/']){
 let scripts='';
 for(const url of assets){const response=await fetch(url,{signal:AbortSignal.timeout(20000)});assert.equal(response.status,200,`Missing asset: ${url}`);scripts+=await response.text();}
 assert.ok(scripts.includes('Device storage is busy'),'Latest recovery code is not published yet');
+assert.ok(scripts.includes('admin_begin_workshop_end')&&scripts.includes('admin_finalize_workshop_end')&&scripts.includes('showDirectoryPicker'),'Verified local workshop shutdown is not published yet');
 assert.ok(scripts.includes('전송하지 못했습니다. 다시 보내주세요.'),'Latest simplified submission notice is not published yet');
 for(const removed of ['기기에 임시 저장하지 못했습니다.','기기 보관 중 · 진행자 확인 필요','이 항목은 확인이 필요합니다.','지금은 질문을 받고 있지 않아요.','지금은 질문 선택이 열려 있지 않아요.','전송 대기 중'])assert.ok(!scripts.includes(removed),`Removed participant notice is still published: ${removed}`);
 assert.ok(scripts.includes('object-fit:contain'),'Photo fitting style missing');

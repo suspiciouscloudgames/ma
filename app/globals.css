@@ -198,3 +198,11 @@ h1 { margin: 0; font-size: clamp(28px, 8vw, 38px); line-height: 1.18; letter-spa
 }
 
 @media (prefers-reduced-motion: reduce) { .photo-tile { animation: none; } }
+.workshop-end { width:42px;height:42px;border:1px solid #c6bdb5;border-radius:50%;background:transparent;color:#514a43;font-size:24px;cursor:pointer; }
+.archive-overlay { position:fixed;inset:0;z-index:3000;background:#25221e77;display:grid;place-items:center;padding:24px; }
+.archive-dialog { width:min(100%,480px);max-height:90vh;overflow:auto;background:#faf7f5;padding:28px;border-radius:16px;color:#292622;box-shadow:0 12px 60px #0003;text-align:left; }
+.archive-dialog h2 { margin:0 0 20px;font-size:22px; }
+.archive-dialog p { line-height:1.6;margin:14px 0;overflow-wrap:anywhere; }
+.archive-dialog label { display:grid;gap:8px; }
+.archive-dialog input { width:100%;padding:10px;border:1px solid #bdb5ad;border-radius:8px;background:white; }
+.archive-dialog button { padding:10px 16px;margin:12px 8px 0 0;border:1px solid #bdb5ad;border-radius:9px;background:white;color:#292622;cursor:pointer; }

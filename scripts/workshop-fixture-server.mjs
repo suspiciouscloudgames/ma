@@ -7,6 +7,8 @@ const require=createRequire(import.meta.url),{WebSocketServer}=require('next/dis
 const sharp=require('sharp');
 const port=4277,origin=`http://127.0.0.1:${port}`;
 let heicBundle;
+let archiveBundle;
+if(process.env.MA_ARCHIVE_TEST){const esbuild=require(require.resolve('esbuild',{paths:[path.dirname(require.resolve('vite/package.json'))]}));archiveBundle=(await esbuild.build({entryPoints:['scripts/archive-browser-check.ts'],bundle:true,write:false,format:'esm',platform:'browser'})).outputFiles[0].contents;}
 if(process.env.MA_HEIC_SAMPLE){
  const esbuild=require(require.resolve('esbuild',{paths:[path.dirname(require.resolve('vite/package.json'))]}));
  const built=await esbuild.build({entryPoints:['scripts/heic-browser-check.ts'],bundle:true,write:false,format:'esm',platform:'browser',plugins:[{name:'fixture-origin',setup(build){build.onLoad({filter:/app\/supabase\.ts$/},async args=>({contents:(await readFile(args.path,'utf8')).replaceAll('https://lhpfrkumzpinzgkkmgmd.supabase.co',origin),loader:'ts'}));}}]});
@@ -23,6 +25,8 @@ function json(res,status,data){res.writeHead(status,{'content-type':'application
 const server=http.createServer(async(req,res)=>{try{
  const url=new URL(req.url,origin),parts=url.pathname.split('/').filter(Boolean);let body=Buffer.alloc(0);for await(const chunk of req)body=Buffer.concat([body,chunk]);
  if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,POST,DELETE,OPTIONS','access-control-allow-headers':'*'});return res.end();}
+ if(archiveBundle&&url.pathname==='/__test/archive-check'){const html=await readFile('out/gallery/index.html','utf8');const css=[...html.matchAll(/<link[^>]+href="([^"]+\.css[^" ]*)"[^>]*>/g)].map(m=>m[0]).join('');res.writeHead(200,{'content-type':'text/html; charset=utf-8'});return res.end(`${css}<h1>LOCAL screenshot test (no cloud deletion)</h1><button>Capture full play page</button><pre></pre><iframe src="/ma/gallery/" style="width:1400px;height:900px"></iframe><script type="module" src="/__test/archive-check.js"></script>`);}
+ if(archiveBundle&&url.pathname==='/__test/archive-check.js'){res.writeHead(200,{'content-type':'text/javascript'});return res.end(archiveBundle);}
  if(heicBundle&&url.pathname==='/__test/heic-check'){res.writeHead(200,{'content-type':'text/html'});return res.end('<h1>Local HEIC test — no production uploads</h1><button>Run HEIC tests</button><pre></pre><script type="module" src="/__test/heic-check.js"></script>');}
  if(heicBundle&&url.pathname==='/__test/heic-check.js'){res.writeHead(200,{'content-type':'text/javascript'});return res.end(heicBundle);}
  if(heicBundle&&url.pathname==='/__test/example.heic'){res.writeHead(200,{'content-type':'image/heic'});return res.end(await readFile(process.env.MA_HEIC_SAMPLE));}

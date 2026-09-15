@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase,readState } from './supabase';
 import { preparePhoto } from './photo-processing';
 
 export type Job = { id: string; kind: 'photo' | 'question' | 'response'; state: 'pending' | 'sent' | 'blocked'; created: number; file?: File; main?: Blob; thumbnail?: Blob; row?: Record<string,string>; attempts: number; next: number; reason?: string };
@@ -76,6 +76,7 @@ export async function flush(force=false) {
   if(running || !navigator.onLine) return;
   running=true;
   try {
+    if((await readState()).workshop_closed)return;
     const pending=(await jobs()).filter(j=>j.state==='pending'&&(force||j.next<=Date.now())).sort((a,b)=>a.created-b.created);
     // Bounded parallelism: one large phone photo cannot stall all text submissions.
     let cursor=0;
