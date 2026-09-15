@@ -17,9 +17,9 @@ test('offline text survives a new page and a lost acknowledgement registers once
  assert.equal((await queue.jobs())[0].state,'pending');assert.equal(s.writes,0);
  queue=s.boot();assert.equal((await queue.jobs())[0].row.text,'preserve me');s.navigation.onLine=true;s.loseAck();await queue.flush();assert.equal(s.writes,1);assert.equal((await queue.jobs())[0].state,'pending');s.advance();await queue.flush();assert.equal((await queue.jobs())[0].state,'sent');assert.equal(s.writes,1);assert.equal((await queue.jobs())[0].id,id);
 });
-test('photo original and prepared blobs survive failed upload; retries do not duplicate files',async()=>{
+test('only compressed photos are persisted; failed upload survives reload without duplicate files',async()=>{
  const s=scenario();let queue=s.boot();const original=new File(['original bytes'],'phone.jpg',{type:'image/jpeg'});await queue.enqueue({kind:'photo',file:original});
- assert.equal(await (await queue.jobs())[0].file.text(),'original bytes');s.navigation.onLine=true;s.fail(true);await queue.flush();assert.equal(s.conversions,1);assert.equal((await queue.jobs())[0].main.size,4);
+ assert.equal((await queue.jobs())[0].file,undefined);assert.equal((await queue.jobs())[0].main.size,4);assert.equal(s.conversions,1);s.navigation.onLine=true;s.fail(true);await queue.flush();assert.equal(s.conversions,1);assert.equal((await queue.jobs())[0].main.size,4);
  queue=s.boot();s.fail(false);s.advance();s.loseAck();await queue.flush();s.advance();await queue.flush();assert.equal(s.conversions,1);assert.equal(s.files.size,2);assert.equal(s.writes,1);const saved=(await queue.jobs())[0];assert.equal(saved.state,'sent');assert.equal(saved.file,undefined);
 });
 test('two tabs retry one durable response without duplicate registration',async()=>{
@@ -39,4 +39,18 @@ test('blocked cross-tab notifications cannot turn a committed job into a failed 
 test('a transient device database open failure is recoverable without reloading',async()=>{
  const factory=new IDBFactory();let unavailable=true;const queue=scenario().boot({indexedDB:{open(...args){if(unavailable)throw Error('Device storage temporarily unavailable');return factory.open(...args);}}});
  await assert.rejects(queue.jobs());unavailable=false;const id=await queue.enqueue({kind:'question',row:{text:'retained',participant_id:'p'}});assert.equal((await queue.jobs())[0].id,id);
+});
+test('old pending originals migrate to compressed blobs before retry',async()=>{
+ const s=scenario();
+ // Access the same database through the injected factory, as an older app would.
+ const factory=new IDBFactory(),legacy=scenario().boot({indexedDB:factory});await legacy.jobs();
+ await new Promise((resolve,reject)=>{const request=factory.open('ma-workshop-outbox',1);request.onsuccess=()=>{const db=request.result,tx=db.transaction('jobs','readwrite');tx.objectStore('jobs').put({id:'legacy',kind:'photo',state:'pending',created:0,attempts:0,next:0,file:new File(['old original'],'old.heic')});tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);};request.onerror=()=>reject(request.error);});
+ const retry=s.boot({indexedDB:factory});s.navigation.onLine=true;s.fail(true);await retry.flush();const saved=(await retry.jobs())[0];assert.equal(saved.file,undefined);assert.ok(saved.main);s.fail(false);s.advance();await retry.flush();assert.equal((await retry.jobs())[0].state,'sent');
+});
+test('large input is compressed before a storage failure; retry stores no original',async()=>{
+ const s=scenario(),factory=new IDBFactory();let denied=true;
+ const queue=s.boot({indexedDB:{open(...args){if(denied)throw Error('QuotaExceededError');return factory.open(...args);}}});
+ const original=new File([new Uint8Array(12*1024*1024)],'live.heic',{type:'image/heic'});
+ await assert.rejects(queue.enqueue({kind:'photo',file:original}));assert.equal(s.conversions,1);assert.equal(s.writes,0);assert.equal(original.size,12*1024*1024);
+ denied=false;await queue.enqueue({kind:'photo',file:original});const saved=(await queue.jobs())[0];assert.equal(saved.file,undefined);assert.equal(saved.main.size+saved.thumbnail.size,9);
 });

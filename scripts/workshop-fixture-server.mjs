@@ -6,6 +6,12 @@ import path from 'node:path';
 const require=createRequire(import.meta.url),{WebSocketServer}=require('next/dist/compiled/ws');
 const sharp=require('sharp');
 const port=4277,origin=`http://127.0.0.1:${port}`;
+let heicBundle;
+if(process.env.MA_HEIC_SAMPLE){
+ const esbuild=require(require.resolve('esbuild',{paths:[path.dirname(require.resolve('vite/package.json'))]}));
+ const built=await esbuild.build({entryPoints:['scripts/heic-browser-check.ts'],bundle:true,write:false,format:'esm',platform:'browser',plugins:[{name:'fixture-origin',setup(build){build.onLoad({filter:/app\/supabase\.ts$/},async args=>({contents:(await readFile(args.path,'utf8')).replaceAll('https://lhpfrkumzpinzgkkmgmd.supabase.co',origin),loader:'ts'}));}}]});
+ heicBundle=built.outputFiles[0].contents;
+}
 const jpeg=await sharp({create:{width:320,height:480,channels:3,background:'#d5d0c4'}}).jpeg().toBuffer();
 const now=new Date().toISOString(),card={x:null,y:null,z:null,created_at:now};
 const tables={exhibit_state:[{id:true,display_mode:'play',questions_enabled:true,locale:'ko',version:1}],photos:Array.from({length:12},(_,i)=>({...card,id:`p${i}`,storage_path:`photos/p${i}.jpg`,thumbnail_path:`thumbnails/p${i}.jpg`,created_at:new Date(1700000000000+i*1000).toISOString()})),questions:Array.from({length:4},(_,i)=>({...card,id:`q${i}`,text:`질문 ${i+1} · ${'어떤 기척을 기억하나요? '.repeat(i===1?12:1)}`})),responses:[]};
@@ -17,6 +23,9 @@ function json(res,status,data){res.writeHead(status,{'content-type':'application
 const server=http.createServer(async(req,res)=>{try{
  const url=new URL(req.url,origin),parts=url.pathname.split('/').filter(Boolean);let body=Buffer.alloc(0);for await(const chunk of req)body=Buffer.concat([body,chunk]);
  if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,POST,DELETE,OPTIONS','access-control-allow-headers':'*'});return res.end();}
+ if(heicBundle&&url.pathname==='/__test/heic-check'){res.writeHead(200,{'content-type':'text/html'});return res.end('<h1>Local HEIC test — no production uploads</h1><button>Run HEIC tests</button><pre></pre><script type="module" src="/__test/heic-check.js"></script>');}
+ if(heicBundle&&url.pathname==='/__test/heic-check.js'){res.writeHead(200,{'content-type':'text/javascript'});return res.end(heicBundle);}
+ if(heicBundle&&url.pathname==='/__test/example.heic'){res.writeHead(200,{'content-type':'image/heic'});return res.end(await readFile(process.env.MA_HEIC_SAMPLE));}
  if(url.pathname==='/__test/control'){const options=body.length?JSON.parse(body):{};if('failReads'in options)failReads=options.failReads;if('failWrites'in options)failWrites=options.failWrites;if('loseAcknowledgement'in options)loseAcknowledgement=options.loseAcknowledgement;return json(res,200,{failReads,failWrites,loseAcknowledgement,inserts,uploadCalls,counts:Object.fromEntries(Object.entries(tables).map(([k,v])=>[k,v.length])),rows:tables});}
  if(parts[0]==='rest'){
    if(req.method==='GET'){

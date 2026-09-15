@@ -10,13 +10,13 @@
     "build": "next build --webpack",
     "start": "next start",
     "test": "pnpm run test:workshop && pnpm run build",
-    "test:workshop": "node --test tests/play-layout.test.mjs tests/outbox.test.mjs tests/sync.test.mjs",
+    "test:workshop": "node --test tests/play-layout.test.mjs tests/outbox.test.mjs tests/sync.test.mjs tests/photo-processing.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
-    "heic2any": "0.0.4",
+    "heic-to": "1.5.2",
     "next": "16.3.4",
     "qrcode.react": "4.2.0",
     "react": "19.2.6",

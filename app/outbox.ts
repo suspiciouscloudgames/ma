@@ -36,7 +36,11 @@ async function save(job: Job) {
 }
 export async function enqueue(input: Pick<Job,'kind'|'file'|'row'>) {
   const job:Job={...input,id:crypto.randomUUID(),state:'pending',created:Date.now(),attempts:0,next:0};
-  // Persist the original file/text BEFORE making any network request.
+  // Persist only the small prepared JPEGs. Keep the original in the form until
+  // this transaction succeeds; a failed conversion/save must not clear it.
+  if(job.kind==='photo'){
+    const photo=await preparePhoto(job.file!);job.main=photo.main;job.thumbnail=photo.thumbnail;job.file=undefined;
+  }
   await save(job); void flush(); return job.id;
 }
 export async function retryBlocked() { for(const job of await jobs()) if(job.state==='blocked') await save({...job,state:'pending',next:0}); void flush(); }
@@ -50,7 +54,7 @@ async function send(job:Job) {
       let prepared;
       try { prepared=await preparePhoto(job.file!); }
       catch {throw Object.assign(new Error('photo-format'),{fatal:true});}
-      job.main=prepared.main; job.thumbnail=prepared.thumbnail; await save(job);
+      job.main=prepared.main; job.thumbnail=prepared.thumbnail; job.file=undefined; await save(job);
     }
     for(const [path,blob] of [[`photos/${job.id}.jpg`,job.main],[`thumbnails/${job.id}.jpg`,job.thumbnail]] as const) {
       const {error}=await supabase.storage.from('workshop-photos').upload(path,blob,{contentType:'image/jpeg',cacheControl:'31536000'});
