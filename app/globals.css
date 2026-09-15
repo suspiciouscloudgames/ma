@@ -198,7 +198,11 @@ h1 { margin: 0; font-size: clamp(28px, 8vw, 38px); line-height: 1.18; letter-spa
 }
 
 @media (prefers-reduced-motion: reduce) { .photo-tile { animation: none; } }
-.workshop-end { width:42px;height:42px;border:1px solid #c6bdb5;border-radius:50%;background:transparent;color:#514a43;font-size:24px;cursor:pointer; }
+.workshop-end-control { display:flex;align-items:center; }
+.exhibit-modes .workshop-end { display:grid;place-items:center;flex:none;width:28px;height:28px;padding:0;border:0;border-radius:50%;background:transparent;color:#c9c6c3;line-height:1;cursor:pointer; }
+.workshop-end svg { display:block; }
+.exhibit-modes .workshop-end:hover { color:#a6a19c; }
+.exhibit-modes .workshop-end:focus-visible { outline:1px solid #aaa49e;outline-offset:2px; }
 .archive-overlay { position:fixed;inset:0;z-index:3000;background:#25221e77;display:grid;place-items:center;padding:24px; }
 .archive-dialog { width:min(100%,480px);max-height:90vh;overflow:auto;background:#faf7f5;padding:28px;border-radius:16px;color:#292622;box-shadow:0 12px 60px #0003;text-align:left; }
 .archive-dialog h2 { margin:0 0 20px;font-size:22px; }
