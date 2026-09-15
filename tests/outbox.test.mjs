@@ -54,3 +54,31 @@ test('large input is compressed before a storage failure; retry stores no origin
  await assert.rejects(queue.enqueue({kind:'photo',file:original}));assert.equal(s.conversions,1);assert.equal(s.writes,0);assert.equal(original.size,12*1024*1024);
  denied=false;await queue.enqueue({kind:'photo',file:original});const saved=(await queue.jobs())[0];assert.equal(saved.file,undefined);assert.equal(saved.main.size+saved.thumbnail.size,9);
 });
+test('unavailable browser storage does not prevent online JPEG or Live still uploads',async()=>{
+ for(const name of ['ordinary.jpg','live.heic']){
+  const s=scenario();s.navigation.onLine=true;
+  const queue=s.boot({indexedDB:{open(){throw Error('QuotaExceededError');}}});
+  const id=await queue.enqueue({kind:'photo',file:new File(['source'],name)});
+  assert.equal(s.files.size,2);assert.equal(s.writes,1);
+  assert.equal((await queue.jobs()).find(j=>j.id===id).state,'sent');
+ }
+});
+test('direct upload with lost acknowledgement retries the same ID without duplicate photos',async()=>{
+ const s=scenario();s.navigation.onLine=true;s.loseAck();
+ const queue=s.boot({indexedDB:{open(){throw Error('SecurityError');}}}),file=new File(['source'],'ordinary.jpg');
+ await assert.rejects(queue.enqueue({kind:'photo',file}));assert.equal(s.writes,1);
+ const id=await queue.enqueue({kind:'photo',file});assert.equal(s.writes,1);assert.equal(s.files.size,2);
+ assert.equal((await queue.jobs()).find(j=>j.id===id).state,'sent');
+});
+test('unavailable storage and network never claim a successful upload',async()=>{
+ const s=scenario();s.navigation.onLine=true;s.fail(true);
+ const queue=s.boot({indexedDB:{open(){throw Error('QuotaExceededError');}}});
+ await assert.rejects(queue.enqueue({kind:'photo',file:new File(['source'],'photo.jpg')}));assert.equal(s.writes,0);
+ await assert.rejects(queue.jobs());
+});
+test('a browser database open that never responds cannot leave sending stuck forever',async()=>{
+ const s=scenario();s.navigation.onLine=true;
+ const queue=s.boot({indexedDB:{open(){return {}; }},setTimeout:callback=>setTimeout(callback,1)});
+ const id=await queue.enqueue({kind:'photo',file:new File(['source'],'photo.jpg')});
+ assert.equal((await queue.jobs()).find(j=>j.id===id).state,'sent');assert.equal(s.writes,1);
+});

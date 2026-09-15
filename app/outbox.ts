@@ -3,6 +3,10 @@ import { preparePhoto } from './photo-processing';
 
 export type Job = { id: string; kind: 'photo' | 'question' | 'response'; state: 'pending' | 'sent' | 'blocked'; created: number; file?: File; main?: Blob; thumbnail?: Blob; row?: Record<string,string>; attempts: number; next: number; reason?: string };
 let dbPromise: Promise<IDBDatabase> | undefined;
+// If browser storage is unavailable, retain the same upload ID across a retry
+// of the selected file. Do not clear the form until the server confirms it.
+const unsavedJobs=new WeakMap<object,Job>();
+const confirmedInMemory=new Map<string,Job>();
 export function observeJobs(refresh:()=>void) {
   window.addEventListener('ma-outbox',refresh);
   let channel:BroadcastChannel|null=null;
@@ -15,16 +19,24 @@ export function observeJobs(refresh:()=>void) {
 }
 function database() {
   return dbPromise ??= new Promise<IDBDatabase>((resolve,reject) => {
-    const request = indexedDB.open('ma-workshop-outbox',1);
+    let settled=false;
+    const fail=(error:unknown)=>{if(settled)return;settled=true;clearTimeout(timer);reject(error);};
+    const timer=setTimeout(()=>fail(new Error('Device storage open timeout')),5000);
+    let request:IDBOpenDBRequest;
+    try { request = indexedDB.open('ma-workshop-outbox',1); }
+    catch(error){fail(error);return;}
     request.onupgradeneeded = () => request.result.createObjectStore('jobs',{keyPath:'id'});
-    request.onsuccess = () => {const db=request.result;db.onversionchange=()=>{db.close();dbPromise=undefined;};resolve(db);};
-    request.onblocked = () => reject(new Error('Device storage is busy'));
-    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {const db=request.result;if(settled){db.close();return;}settled=true;clearTimeout(timer);db.onversionchange=()=>{db.close();dbPromise=undefined;};resolve(db);};
+    request.onblocked = () => fail(new Error('Device storage is busy'));
+    request.onerror = () => fail(request.error);
   }).catch(error=>{dbPromise=undefined;throw error;});
 }
 export async function jobs(): Promise<Job[]> {
+  try {
   const db=await database();
-  return new Promise((resolve,reject) => { const request=db.transaction('jobs').objectStore('jobs').getAll(); request.onsuccess=()=>resolve(request.result); request.onerror=()=>reject(request.error); });
+  const stored=await new Promise<Job[]>((resolve,reject) => { const request=db.transaction('jobs').objectStore('jobs').getAll(); request.onsuccess=()=>resolve(request.result); request.onerror=()=>reject(request.error); });
+  return [...new Map([...stored,...confirmedInMemory.values()].map(j=>[j.id,j])).values()];
+  }catch(error){if(confirmedInMemory.size)return [...confirmedInMemory.values()];throw error;}
 }
 async function save(job: Job) {
   const db=await database();
@@ -35,13 +47,26 @@ async function save(job: Job) {
   try{if(typeof BroadcastChannel!=='undefined'){const channel=new BroadcastChannel('ma-outbox');channel.postMessage('changed');channel.close();}}catch{}
 }
 export async function enqueue(input: Pick<Job,'kind'|'file'|'row'>) {
-  const job:Job={...input,id:crypto.randomUUID(),state:'pending',created:Date.now(),attempts:0,next:0};
+  const identity=input.file??input.row;
+  const job:Job=(identity&&unsavedJobs.get(identity))??{...input,id:crypto.randomUUID(),state:'pending',created:Date.now(),attempts:0,next:0};
   // Persist only the small prepared JPEGs. Keep the original in the form until
   // this transaction succeeds; a failed conversion/save must not clear it.
-  if(job.kind==='photo'){
+  if(job.kind==='photo'&&!job.main){
     const photo=await preparePhoto(job.file!);job.main=photo.main;job.thumbnail=photo.thumbnail;job.file=undefined;
   }
-  await save(job); void flush(); return job.id;
+  if(identity)unsavedJobs.set(identity,job);
+  try{await save(job);}catch(storageError){
+    if(!navigator.onLine)throw storageError;
+    if((await readState()).workshop_closed)throw Error('workshop_closed');
+    await send(job);
+    const receipt:Job={...job,state:'sent',file:undefined,main:undefined,thumbnail:undefined,row:undefined};
+    confirmedInMemory.set(job.id,receipt);
+    try{await save(receipt);}catch{/* Server receipt is authoritative, even if local storage stays unavailable. */}
+    if(identity)unsavedJobs.delete(identity);
+    return job.id;
+  }
+  if(identity)unsavedJobs.delete(identity);
+  void flush(); return job.id;
 }
 export async function retryBlocked() { for(const job of await jobs()) if(job.state==='blocked') await save({...job,state:'pending',next:0}); void flush(); }
 function failure(error: {code?:string;message?:string;statusCode?:string|number}) {
