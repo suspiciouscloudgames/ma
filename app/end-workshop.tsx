@@ -34,8 +34,8 @@ export default function EndWorkshop({capture,onBusy,onFinished}:{capture:(snapsh
   finally{lock.current=false;onBusy(false);onFinished();}
  }
  return <div className="archive-exclude workshop-end-control"><button className="workshop-end" title="워크숍 종료" aria-label="워크숍 종료" onClick={show}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true"><path d="M12 3v9M6.3 5.8a8 8 0 1 0 11.4 0"/></svg></button>{open&&<div className="archive-overlay"><section className="archive-dialog" role="dialog" aria-modal="true" aria-labelledby="archive-title"><h2 id="archive-title">워크숍 종료</h2>
- {stage==='password'&&<form onSubmit={e=>{e.preventDefault();void authenticate();}}><p>매번 관리자 암호를 입력해야 합니다. 확인 후 새 전송을 중지합니다.</p><label>관리자 암호<input type="password" autoComplete="off" value={password} onChange={e=>setPassword(e.target.value)} autoFocus/></label><button disabled={!password} type="submit">비밀번호 확인</button></form>}
- {stage==='folder'&&<><p>새 전송이 중지됐습니다. 저장 폴더를 선택하면 기척의 놀이 전체 이미지와 사진·질문·답변을 저장합니다. 모든 파일 검증 후 클라우드 자료를 삭제합니다.</p><button onClick={()=>void saveAndEnd()}>저장 폴더 선택 및 종료</button></>}
- <p role="status" style={{whiteSpace:'pre-wrap'}}>{message}</p>{stage!=='running'&&<button onClick={close}>{stage==='done'?'닫기':'취소'}</button>}
+ {stage==='password'&&<form onSubmit={e=>{e.preventDefault();void authenticate();}}><label>비밀번호<input type="password" autoComplete="off" value={password} onChange={e=>setPassword(e.target.value)} autoFocus/></label><button disabled={!password} type="submit">확인</button></form>}
+ {stage==='folder'&&<button onClick={()=>void saveAndEnd()}>저장하기</button>}
+ {message&&<p role="status" style={{whiteSpace:'pre-wrap'}}>{message}</p>}{stage!=='running'&&<button onClick={close}>{stage==='done'?'닫기':'취소'}</button>}
  </section></div>}</div>;
 }
