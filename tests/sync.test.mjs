@@ -19,6 +19,9 @@ test('submission notices stay silent while saving or pending; completion and gen
  for(const en of [false,true])for(const state of ['idle','saving','pending'])assert.equal(exports.SubmissionStatus({state,en}),null);
  assert.equal(exports.SubmissionStatus({state:'sent',en:false}).props.children,'전송 완료');
  assert.equal(exports.SubmissionStatus({state:'sent',en:true}).props.children,'Sent successfully.');
+ assert.equal(exports.SubmissionStatus({state:'sent',en:false,tr:true}).props.children,'Gönderildi.');
+ assert.equal(exports.SubmissionStatus({state:'storage',en:false,tr:true}).props.children[0],'Gönderilemedi. Lütfen tekrar deneyin.');
+ for(const state of ['idle','saving','pending'])assert.equal(exports.SubmissionStatus({state,en:false,tr:true}),null);
  let storageRetries=0;
  const failure=exports.SubmissionStatus({state:'storage',en:false,onRetry:()=>{storageRetries++;}});
  assert.equal(failure.props.children[0],'전송하지 못했습니다. 다시 보내주세요.');

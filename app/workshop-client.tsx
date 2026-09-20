@@ -29,19 +29,19 @@ export function useSubmission(kind:Job['kind']) {
   };
   return {state,submit,reset:()=>{id.current=null;try{localStorage.removeItem(`ma-current-${kind}`);}catch{}setState('idle');},busy:state==='pending'||state==='saving'};
 }
-export function SubmissionStatus({state,en,onRetry}:{state:string;en:boolean;onRetry?:()=>void|Promise<void>}) {
-  if(state==='sent')return <p aria-live="polite" className="submission-status">{en?'Sent successfully.':'전송 완료'}</p>;
+export function SubmissionStatus({state,en,tr=false,onRetry}:{state:string;en:boolean;tr?:boolean;onRetry?:()=>void|Promise<void>}) {
+  if(state==='sent')return <p aria-live="polite" className="submission-status">{tr?"Gönderildi.":en?'Sent successfully.':'전송 완료'}</p>;
   // Blocked durable jobs are handled by the shared retry notice below.
   if(state!=='storage')return null;
-  return <p aria-live="polite" className="submission-status">{en?'Could not send. Please try again.':'전송하지 못했습니다. 다시 보내주세요.'}{onRetry&&<button onClick={()=>void onRetry()}>{en?'Retry':'다시 보내기'}</button>}</p>;
+  return <p aria-live="polite" className="submission-status">{tr?"Gönderilemedi. Lütfen tekrar deneyin.":en?'Could not send. Please try again.':'전송하지 못했습니다. 다시 보내주세요.'}{onRetry&&<button onClick={()=>void onRetry()}>{tr?"Tekrar dene":en?'Retry':'다시 보내기'}</button>}</p>;
 }
 export default function WorkshopClient() {
-  const state=useExhibitState();const [blocked,setBlocked]=useState(0);const en=state.locale==='en';
+  const state=useExhibitState();const [blocked,setBlocked]=useState(0);const tr=state.locale==='tr',en=state.locale==='en';
   useEffect(()=>{document.documentElement.lang=state.locale;},[state.locale]);
   useEffect(()=>{let alive=true;const refresh=()=>{void jobs().then(all=>{if(alive)setBlocked(all.filter(j=>j.state==='blocked').length);}).catch(()=>{});};
     const resume=()=>{if(document.visibilityState==='visible'){void flush(true);refresh();}};
     const off=observeJobs(refresh);window.addEventListener('online',resume);document.addEventListener('visibilitychange',resume);const timer=setInterval(()=>{void flush();},3000);resume();
     return()=>{alive=false;clearInterval(timer);off();window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',resume);};
   },[]);
-  return blocked>0?<aside className="outbox-status" aria-live="polite"><span>{en?'Could not send. Please try again.':'전송하지 못했습니다. 다시 보내주세요.'} <button onClick={()=>void retryBlocked()}>{en?'Retry':'다시 보내기'}</button></span></aside>:null;
+  return blocked>0?<aside className="outbox-status" aria-live="polite"><span>{tr?"Gönderilemedi. Lütfen tekrar deneyin.":en?'Could not send. Please try again.':'전송하지 못했습니다. 다시 보내주세요.'} <button onClick={()=>void retryBlocked()}>{tr?"Tekrar dene":en?'Retry':'다시 보내기'}</button></span></aside>:null;
 }
