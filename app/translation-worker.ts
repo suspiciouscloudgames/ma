@@ -5,8 +5,12 @@ export function startTranslationWorker(isPaused:()=>boolean,onCompleted:()=>void
   if(stopped||running||isPaused()||document.visibilityState==='hidden')return;
   running=true;
   try{
-   const response=await send('https://lhpfrkumzpinzgkkmgmd.supabase.co/functions/v1/translate-workshop',{method:'POST',headers:{apikey:'sb_publishable__YJW6ZRNOjK8z7CuJ-0OOA_GyUzRWLL'},signal:AbortSignal.timeout(120000)});
-   if(response.ok){const body=await response.json();if(body.processed&&!stopped)onCompleted();}
+   await Promise.all(Array.from({length:3},async()=>{
+    try{
+     const response=await send('https://lhpfrkumzpinzgkkmgmd.supabase.co/functions/v1/translate-workshop',{method:'POST',headers:{apikey:'sb_publishable__YJW6ZRNOjK8z7CuJ-0OOA_GyUzRWLL'},signal:AbortSignal.timeout(120000)});
+     if(response.ok){const body=await response.json();if(body.processed&&!stopped&&!isPaused())onCompleted();}
+    }catch{/* One failed translation does not interrupt the other workers. */}
+   }));
   }catch{/* Translation failure must not alter the original canvas or upload UI. */}
   finally{running=false;}
  };

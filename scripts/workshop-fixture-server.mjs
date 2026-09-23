@@ -19,12 +19,19 @@ const now=new Date().toISOString(),card={x:null,y:null,z:null,created_at:now};
 const tables={exhibit_state:[{id:true,display_mode:'play',questions_enabled:true,locale:'ko',version:1}],photos:Array.from({length:12},(_,i)=>({...card,id:`p${i}`,storage_path:`photos/p${i}.jpg`,thumbnail_path:`thumbnails/p${i}.jpg`,created_at:new Date(1700000000000+i*1000).toISOString()})),questions:Array.from({length:4},(_,i)=>({...card,id:`q${i}`,text:`질문 ${i+1} · ${'어떤 기척을 기억하나요? '.repeat(i===1?12:1)}`})),responses:[]};
 for(let i=0;i<12;i++)tables.responses.push({...card,id:`r${i}`,question_id:`q${i%4}`,photo_id:`p${i}`,text:`답변 ${i+1} · ${'기억에 남은 순간입니다. '.repeat(i===2?40:2)}`});
 let failReads=false,failWrites=false,loseAcknowledgement=false,inserts=0,uploadCalls=0;
+let translated=false;
+if(process.env.MA_TRANSLATION_TEST){tables.questions[0].text='Bu fotoğraf sana hangi anıyı hatırlatıyor?';tables.responses[0].text='Bana çocukluğumda deniz kenarında geçirdiğim yazları hatırlatıyor.';}
 const storage=new Map(),peers=new Map();
 function notify(table,record,type='INSERT'){for(const [ws,subscriptions] of peers)for(const sub of subscriptions)if(sub.table===table)ws.send(JSON.stringify({topic:sub.topic,event:'postgres_changes',payload:{ids:[sub.id],data:{schema:'public',table,type,record,old_record:{},commit_timestamp:new Date().toISOString(),errors:null}},ref:null}));}
 function json(res,status,data){res.writeHead(status,{'content-type':'application/json','access-control-allow-origin':'*'});res.end(JSON.stringify(data));}
 const server=http.createServer(async(req,res)=>{try{
  const url=new URL(req.url,origin),parts=url.pathname.split('/').filter(Boolean);let body=Buffer.alloc(0);for await(const chunk of req)body=Buffer.concat([body,chunk]);
  if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,POST,DELETE,OPTIONS','access-control-allow-headers':'*'});return res.end();}
+ if(url.pathname==='/functions/v1/translate-workshop'){
+  if(!process.env.MA_TRANSLATION_TEST||translated)return json(res,200,{processed:0});
+  translated=true;
+  setTimeout(()=>{Object.assign(tables.questions[0],{translation_en:'Which memory does this photo remind you of?',translation_ko:'이 사진은 어떤 기억을 떠올리게 하나요?'});Object.assign(tables.responses[0],{translation_en:'It reminds me of the summers I spent by the sea as a child.',translation_ko:'어릴 때 바닷가에서 보냈던 여름이 떠올라요.'});notify('questions',tables.questions[0],'UPDATE');notify('responses',tables.responses[0],'UPDATE');json(res,200,{processed:2});},2500);return;
+ }
  if(archiveBundle&&url.pathname==='/__test/archive-check'){const html=await readFile('out/gallery/index.html','utf8');const css=[...html.matchAll(/<link[^>]+href="([^"]+\.css[^" ]*)"[^>]*>/g)].map(m=>m[0]).join('');res.writeHead(200,{'content-type':'text/html; charset=utf-8'});return res.end(`${css}<h1>LOCAL screenshot test (no cloud deletion)</h1><button>Capture full play page</button><pre></pre><iframe src="/ma/gallery/" style="width:1400px;height:900px"></iframe><script type="module" src="/__test/archive-check.js"></script>`);}
  if(archiveBundle&&url.pathname==='/__test/archive-check.js'){res.writeHead(200,{'content-type':'text/javascript'});return res.end(archiveBundle);}
  if(heicBundle&&url.pathname==='/__test/heic-check'){res.writeHead(200,{'content-type':'text/html'});return res.end('<h1>Local HEIC test — no production uploads</h1><button>Run HEIC tests</button><pre></pre><script type="module" src="/__test/heic-check.js"></script>');}
