@@ -17,17 +17,23 @@ export function useDraft<T>(key:string,initial:T) {
 export function useSubmission(kind:Job['kind']) {
   const [state,setState]=useState<'idle'|'saving'|'pending'|'sent'|'blocked'|'storage'>('idle');
   const lock=useRef(false); const id=useRef<string|null>(null);
+  const active=useRef(false);
   useEffect(()=>{let alive=true;try{id.current=localStorage.getItem(`ma-current-${kind}`);}catch{}
-    const refresh=async()=>{try{const job=(await jobs()).find(j=>j.id===id.current);if(alive&&job)setState(job.state);}catch{}};
+    let revision=0;
+    const refresh=async()=>{const target=id.current,read=++revision;try{const job=(await jobs()).find(j=>j.id===target);if(!alive||read!==revision||target!==id.current||!job)return;
+      // A durable receipt is not a new submission. Restore unfinished work only.
+      if(job.state==='sent'&&!active.current){id.current=null;try{localStorage.removeItem(`ma-current-${kind}`);}catch{}return;}
+      active.current=true;setState(job.state);
+    }catch{}};
     void refresh(); const off=observeJobs(refresh);return()=>{alive=false;off();};
   },[kind]);
   const submit=async(input:Omit<Parameters<typeof enqueue>[0],'kind'>)=>{
     if(lock.current||['pending','saving'].includes(state))return false;lock.current=true;setState('saving');
-    id.current=null;
+    id.current=null;active.current=true;
     try{id.current=await enqueue({...input,kind});try{localStorage.setItem(`ma-current-${kind}`,id.current);}catch{}setState('pending');try{const job=(await jobs()).find(j=>j.id===id.current);if(job)setState(job.state);}catch{/* Already saved: an optional status read must not enable duplicate submission. */}return true;}
     catch{setState('storage');return false;}finally{lock.current=false;}
   };
-  return {state,submit,reset:()=>{id.current=null;try{localStorage.removeItem(`ma-current-${kind}`);}catch{}setState('idle');},busy:state==='pending'||state==='saving'};
+  return {state,submit,reset:()=>{id.current=null;active.current=false;try{localStorage.removeItem(`ma-current-${kind}`);}catch{}setState('idle');},busy:state==='pending'||state==='saving'};
 }
 export function SubmissionStatus({state,en,tr=false,onRetry}:{state:string;en:boolean;tr?:boolean;onRetry?:()=>void|Promise<void>}) {
   if(state==='sent')return <p aria-live="polite" className="submission-status">{tr?"Gönderildi.":en?'Sent successfully.':'전송 완료'}</p>;

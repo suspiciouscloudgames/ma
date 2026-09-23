@@ -11,6 +11,38 @@ function boot(){const exports={},events=[];let statusCallback,reply={data:{versi
  return{api:exports,win,doc,events,reply(value){reply=value;},subscribe(){statusCallback('SUBSCRIBED');}};
 }
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
+async function submissionHarness(kind,oldState){
+ const compiled=ts.transpileModule(await readFile(new URL('../app/workshop-client.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
+ const slots=[],effects=[],storage=new Map([[`ma-current-${kind}`,'old']]);let cursor=0,observer,rows=[{id:'old',kind,state:oldState}],read=async()=>rows;
+ const exports={};vm.runInNewContext(compiled,{exports,localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},require:name=>name==='react/jsx-runtime'?jsxRuntime:name==='react'?{
+ useState(initial){const i=cursor++;if(!(i in slots))slots[i]=initial;return[slots[i],v=>{slots[i]=v;}];},
+ useRef(initial){const i=cursor++;return slots[i]??= {current:initial};},
+ useEffect(fn){const i=cursor++;if(!(i in slots)){slots[i]=true;effects.push(fn);}}
+ }:name==='./outbox'?{jobs:()=>read(),observeJobs:fn=>{observer=fn;return()=>{};},enqueue:async()=>{rows.push({id:'new',kind,state:'sent'});return 'new';}}:{}});
+ const render=()=>{cursor=0;return exports.useSubmission(kind);};render();effects.forEach(fn=>fn());
+ return{render,storage,refresh:()=>observer(),setRows:v=>{rows=v;},setRead:fn=>{read=fn;},notice:exports.SubmissionStatus};
+}
+test('reopening every mobile form hides old success receipts in all three languages',async()=>{
+ for(const kind of ['photo','question','response']){
+  const h=await submissionHarness(kind,'sent');await tick();assert.equal(h.render().state,'idle');assert.equal(h.storage.has(`ma-current-${kind}`),false);
+  for(const locale of ['ko','en','tr'])assert.equal(h.notice({state:h.render().state,en:locale==='en',tr:locale==='tr'}),null);
+  await h.refresh();assert.equal(h.render().state,'idle');
+  assert.equal(await h.render().submit({}),true);assert.equal(h.render().state,'sent','a new real completion still appears');
+  h.render().reset();await h.refresh();assert.equal(h.render().state,'idle');
+ }
+});
+test('unfinished uploads restore and show completion only when they actually finish',async()=>{
+ for(const state of ['pending','blocked']){
+  const h=await submissionHarness('photo',state);await tick();assert.equal(h.render().state,state);
+  h.setRows([{id:'old',state:'sent'}]);await h.refresh();assert.equal(h.render().state,'sent');
+ }
+});
+test('a delayed receipt read cannot override reset or a newer submission',async()=>{
+ const h=await submissionHarness('photo','pending');await tick();let release;
+ h.setRead(()=>new Promise(resolve=>{release=resolve;}));const stale=h.refresh();h.render().reset();
+ h.setRead(async()=>[{id:'new',state:'sent'}]);await h.render().submit({});release([{id:'old',state:'blocked'}]);await stale;
+ assert.equal(h.render().state,'sent');
+});
 test('submission notices stay silent while saving or pending; completion and genuine failures remain visible',async()=>{
  const text=await readFile(new URL('../app/workshop-client.tsx',import.meta.url),'utf8');
  const compiled=ts.transpileModule(text,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
