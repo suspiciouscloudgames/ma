@@ -10,7 +10,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "test": "pnpm run test:workshop && pnpm run build",
-    "test:workshop": "node --test tests/play-layout.test.mjs tests/outbox.test.mjs tests/sync.test.mjs tests/photo-processing.test.mjs tests/workshop-archive.test.mjs",
+    "test:workshop": "node --test tests/play-layout.test.mjs tests/outbox.test.mjs tests/sync.test.mjs tests/photo-processing.test.mjs tests/workshop-archive.test.mjs tests/translation.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },

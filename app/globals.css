@@ -159,6 +159,9 @@ h1 { margin: 0; font-size: clamp(28px, 8vw, 38px); line-height: 1.18; letter-spa
 .outbox-status button, .admin-notice button { margin-left: 12px; border: 0; background: transparent; color: inherit; text-decoration: underline; cursor: pointer; }
 .admin-notice { padding: 10px 16px; background: #f4ede4; color: #51463d; font-size: 13px; }
 .question-node { overflow-wrap: anywhere; }
+.workshop-translation { margin-top: 10px; color: #868681; font-family: Arial, sans-serif; font-size: 11px; font-weight: 400; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.workshop-translation > div + div { margin-top: 5px; }
+.question-response-node .workshop-translation { margin: 0; padding: 0 13px 13px; }
 .exhibit-canvas .gallery-connections { z-index: 0; }
 .question-choice-list { display: grid; gap: 8px; }
 .question-choice-list button { padding: 16px; border: 1px solid var(--line); border-radius: 13px; background: #fafaf8; color: #333; font-size: 15px; line-height: 1.5; text-align: left; }

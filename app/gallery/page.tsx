@@ -10,10 +10,12 @@ import {flushSync} from 'react-dom';
 import EndWorkshop from '../end-workshop';
 import {captureWorkshop} from '../workshop-capture';
 import type {ArchiveSnapshot} from '../workshop-archive';
+import Translation, {type TranslatedText} from '../translation';
+import {startTranslationWorker} from '../translation-worker';
 type Mode='none'|'photos'|'play';type Locale='ko'|'tr'|'en';
 type Photo=Card&{storage_path:string;thumbnail_path:string;created_at:string};
-type Question=Card&{text:string;created_at:string};
-type Response=Card&{question_id:string;photo_id:string;text:string;created_at:string};
+type Question=Card&TranslatedText&{text:string;created_at:string};
+type Response=Card&TranslatedText&{question_id:string;photo_id:string;text:string;created_at:string};
 type Kind='photo'|'question'|'response';
 type Drag={kind:Kind;id:string;dx:number;dy:number;x:number;y:number;z:number};
 const MOBILE_URL='https://suspiciouscloudgames.github.io/ma/';
@@ -33,6 +35,7 @@ export default function GalleryPage(){
    setPhotos(old=>merge(p.data as Photo[],old));setQuestions(old=>merge(q.data as Question[],old));setResponses(old=>merge(r.data as Response[],old));
  },[]);
  useEffect(()=>subscribeTables(load,['photos','questions','responses']),[load]);
+ useEffect(()=>startTranslationWorker(()=>ending.current||state.workshop_closed===true,()=>{void load();}),[load,state.workshop_closed]);
  useEffect(()=>{const section=canvas.current;if(!section)return;const measure=()=>{
    setWidth(section.clientWidth||1400);const next:Record<string,number>={};section.querySelectorAll<HTMLElement>('[data-card]').forEach(el=>{next[el.dataset.card!]=el.offsetHeight;});
    setHeights(old=>JSON.stringify(old)===JSON.stringify(next)?old:next);setTick(v=>v+1);
@@ -86,7 +89,7 @@ export default function GalleryPage(){
  <section ref={canvas} className={`gallery-grid exhibit-canvas ${mode==='photos'?'chronological-photos':''}`} style={{minHeight:mode==='play'?layout.height:undefined,display:mode==='none'?'none':undefined}}>
  {mode==='photos'&&photos.map(p=><article key={p.id} className="gallery-item"><div className="photo-actions"><button onClick={()=>remove('photo',p.id)}>×</button></div><img src={publicPhotoUrl(p.storage_path)} alt={tr?"Paylaşılan fotoğraf":en?'Shared photo':'공동 사진'}/></article>)}
  {mode==='play'&&<svg className="gallery-connections" width="100%" height={layout.height}>{lines.map(l=><path key={l.id} d={l.d}/>)}</svg>}
- {mode==='play'&&questions.map(q=><article key={q.id} data-card={q.id} data-q={q.id} className="question-node" style={styleFor(q.id)} onPointerDown={e=>start(e,'question',q.id)} onPointerMove={moving} onPointerUp={finish} onPointerCancel={finish}><button className="node-delete" onClick={()=>remove('question',q.id)}>×</button><span>{q.text}</span></article>)}
- {mode==='play'&&responses.map(r=><article key={r.id} data-card={r.id} data-r={r.id} className="question-response-node" style={styleFor(r.id)} onPointerDown={e=>start(e,'response',r.id)} onPointerMove={moving} onPointerUp={finish} onPointerCancel={finish}><button className="node-delete" onClick={()=>remove('response',r.id)}>×</button>{photoMap.get(r.photo_id)&&<img src={publicPhotoUrl(photoMap.get(r.photo_id)!.storage_path)} alt={tr?"Bağlantılı fotoğraf":en?'Linked photo':'연결된 사진'}/>}<p>{r.text}</p></article>)}
+ {mode==='play'&&questions.map(q=><article key={q.id} data-card={q.id} data-q={q.id} className="question-node" style={styleFor(q.id)} onPointerDown={e=>start(e,'question',q.id)} onPointerMove={moving} onPointerUp={finish} onPointerCancel={finish}><button className="node-delete" onClick={()=>remove('question',q.id)}>×</button><span>{q.text}</span><Translation item={q}/></article>)}
+ {mode==='play'&&responses.map(r=><article key={r.id} data-card={r.id} data-r={r.id} className="question-response-node" style={styleFor(r.id)} onPointerDown={e=>start(e,'response',r.id)} onPointerMove={moving} onPointerUp={finish} onPointerCancel={finish}><button className="node-delete" onClick={()=>remove('response',r.id)}>×</button>{photoMap.get(r.photo_id)&&<img src={publicPhotoUrl(photoMap.get(r.photo_id)!.storage_path)} alt={tr?"Bağlantılı fotoğraf":en?'Linked photo':'연결된 사진'}/>}<p>{r.text}</p><Translation item={r}/></article>)}
  </section><section className="mobile-photo-list">{photos.map(p=><img key={p.id} src={publicPhotoUrl(p.storage_path)} alt={tr?"Paylaşılan fotoğraf":en?'Shared photo':'공동 사진'}/>)}</section></main>;
 }
