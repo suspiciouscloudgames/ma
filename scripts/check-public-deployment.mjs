@@ -3,7 +3,7 @@ const origin='https://suspiciouscloudgames.github.io';
 const assets=new Set(),routes=[];
 for(const route of ['/ma/','/ma/gallery/','/ma/question/','/ma/respond/']){
  const response=await fetch(`${origin}${route}?verify=${process.argv[2]??Date.now()}`,{signal:AbortSignal.timeout(20000)});
- assert.equal(response.status,200,route);const html=await response.text();assert.ok(html.includes('기척의 놀이 | Play of Traces'),`Unexpected page: ${route}`);
+ assert.equal(response.status,200,route);const html=await response.text();assert.ok(html.includes('<title>Loopntale Workshop</title>'),`Unexpected page: ${route}`);
  for(const match of html.matchAll(/(?:src|href)="([^" ]+\.(?:js|css)(?:\?[^" ]*)?)"/g)){const url=new URL(match[1].replaceAll('&amp;','&'),origin);if(url.origin===origin)assets.add(url.href);}
  routes.push({route,status:response.status});
 }

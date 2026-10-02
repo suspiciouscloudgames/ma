@@ -4,7 +4,7 @@ import WorkshopClient from './workshop-client';
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://suspiciouscloudgames.github.io"),
-  title: "기척의 놀이 | Play of Traces",
+  title: "Loopntale Workshop",
   description: "기척의 놀이 | Play of Traces",
   alternates: { canonical: "/ma/" },
   openGraph: {
