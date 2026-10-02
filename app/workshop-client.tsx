@@ -43,7 +43,7 @@ export function SubmissionStatus({state,en,tr=false,onRetry}:{state:string;en:bo
 }
 export default function WorkshopClient() {
   const state=useExhibitState();const [blocked,setBlocked]=useState(0);const tr=state.locale==='tr',en=state.locale==='en';
-  useEffect(()=>{document.documentElement.lang=state.locale;},[state.locale]);
+  useEffect(()=>{document.documentElement.lang=state.locale;document.title=state.locale==='en'?'Play of Traces':'기척의 놀이';},[state.locale]);
   useEffect(()=>{let alive=true;const refresh=()=>{void jobs().then(all=>{if(alive)setBlocked(all.filter(j=>j.state==='blocked').length);}).catch(()=>{});};
     const resume=()=>{if(document.visibilityState==='visible'){void flush(true);refresh();}};
     const off=observeJobs(refresh);window.addEventListener('online',resume);document.addEventListener('visibilitychange',resume);const timer=setInterval(()=>{void flush();},3000);resume();

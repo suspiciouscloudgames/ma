@@ -83,3 +83,5 @@ test('bursts coalesce; online, resume, and realtime reconnect refresh; cleanup s
  off();s.win.dispatchEvent(new Event('online'));s.events[0]();await tick();assert.equal(calls,5);
  }finally{off();}
 });
+
+test('legacy Turkish workshop state falls back to Korean and English remains available',async()=>{const s=boot();s.reply({data:{version:11,locale:'tr'},error:null});assert.equal((await s.api.readState()).locale,'ko');s.reply({data:{version:12,locale:'en'},error:null});assert.equal((await s.api.readState()).locale,'en');});

@@ -36,7 +36,7 @@ let latestState: ExhibitState | undefined;
 export async function readState() {
   const { data, error } = await supabase.from("exhibit_state").select("*").single();
   if (error) throw error;
-  if(!latestState || data.version >= latestState.version) latestState=data as ExhibitState;
+  if(!latestState || data.version >= latestState.version) latestState={...data,locale:data.locale==='en'?'en':'ko'} as ExhibitState;
   return latestState;
 }
 
